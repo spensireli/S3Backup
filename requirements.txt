@@ -1,0 +1,4 @@
+boto3==1.21.28
+argparse==1.4.0
+pyyaml==5.4.1
+jinja2==2.11.2
