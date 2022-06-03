@@ -18,7 +18,17 @@ class AWS():
             region_name=region
         )
         return session
-    
+
+    def use_aws_profile(self, profile, region):
+        """
+        Function for configuration of AWS with existing aws profile.
+        """
+        session = boto3.Session(
+            profile_name=profile,
+            region_name=region
+        )
+        return session
+
     def list_objects(self, session, bucket, prefix):
         client = session.client('s3')
         response = client.list_objects(
@@ -26,11 +36,11 @@ class AWS():
             Prefix=prefix
         )
         return response
-    
+
     def put_object(self, session, body, bucket, key):
         client = session.client('s3')
         response = client.put_object(
-            Body=body, 
+            Body=body,
             Bucket=bucket,
             Key=key
         )
@@ -47,4 +57,3 @@ class AWS():
         client = session.resource('s3')
         uploading = client.Bucket(bucket).upload_file(local_file, remote_file)
         return(uploading)
-
