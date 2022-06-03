@@ -19,6 +19,7 @@ logging.basicConfig(stream=sys.stdout, level=logging.INFO)
 log = logging.getLogger(__name__)
 
 parser = argparse.ArgumentParser(description='Uploads files in a directory to AWS s3.')
+parser.add_argument('-p', '--profile', type=str, help='AWS Profile if using an IAM Instance Role.')
 parser.add_argument('-c', '--config', type=str, help='Relative path to the configuration file.')
 parser.add_argument('-k', '--key', type=str, help='Access key')
 parser.add_argument('-s', '--secret', type=str, help='Secret key')
@@ -26,6 +27,7 @@ parser.add_argument('-b', '--bucket', type=str, help='The name of the s3 bucket.
 parser.add_argument('-r', '--region', type=str, help='The region you are using s3 in.')
 parser.add_argument('-d', '--directory', type=str, help='The linux full directory path you are uploading files from')
 args = parser.parse_args()
+parser_profile = args.profile
 parser_config_file = args.config
 parer_access_key = args.key
 parser_secret_key = args.secret
@@ -56,6 +58,9 @@ if __name__ == "__main__":
             region = config_data.get('AWS').get('Region')
             if region is not None:
                 log.info("Using region %s...", region)
+            profile = config_data.get('AWS').get('Profile')
+            if region is not None:
+                log.info("Using profile %s...", profile)
 
     except Exception as e:
         log.error(e)
@@ -63,6 +68,10 @@ if __name__ == "__main__":
     # Load variables from commandline.
 
     try:
+        if parser_profile is not None:
+            profile = parser_profile
+            log.info("Profile loaded...")
+            log.info("Profile: %s", profile)
         if parer_access_key is not None:
             access_key = parer_access_key
             log.info("Access key loaded...")
@@ -91,9 +100,15 @@ if __name__ == "__main__":
     except Exception as e:
         log.error(e)
 
-    # Getting the manifest from S3 if one exists. If not then we will create one. 
-    try:
+    if profile is not None:
+        print(len(profile))
+        print(region)
+        client = AWS().use_aws_profile(profile, region)
+    else:
         client = AWS().configure_aws_profile(access_key, secret_key, region)
+
+    # Getting the manifest from S3 if one exists. If not then we will create one.
+    try:
         manifest = AWS().list_objects(client, remote_bucket, prefix='manifest/manifest.json')
         if manifest.get('Contents') is None:
             manifest_init = { "manifest_bucket": remote_bucket, "manifest_creation_timestamp": int(time.time())}
@@ -111,7 +126,7 @@ if __name__ == "__main__":
         s3_file_list = []
         if manifested_files is None:
             manifested_files = []
-        
+
         for file in manifested_files:
             file_name = file.get('file_name')
             s3_file_list.append(file_name)
